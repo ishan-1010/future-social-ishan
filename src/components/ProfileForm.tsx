@@ -5,13 +5,6 @@ import { useSession } from 'next-auth/react'
 import { User, Camera, Save, Edit3 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-interface Profile {
-  id: string
-  username: string | null
-  bio: string | null
-  avatar_url: string | null
-}
-
 export default function ProfileForm() {
   const { data: session } = useSession()
   const [username, setUsername] = useState('')
@@ -72,7 +65,7 @@ export default function ProfileForm() {
         throw new Error(error.error || 'Failed to update profile')
       }
 
-      const { profile: updatedProfile } = await response.json()
+      await response.json()
       toast.success('Profile updated successfully!')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update profile')
