@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
+import type { User } from '@supabase/supabase-js'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
-import { LogIn, LogOut, User, Mail, Lock } from 'lucide-react'
+import { LogIn, LogOut, User as UserIcon, Mail, Lock } from 'lucide-react'
 
 export default function LoginForm() {
   const supabase = createClient()
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -21,12 +22,12 @@ export default function LoginForm() {
     }
     getUser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ?? null)
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [supabase.auth])
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -92,7 +93,7 @@ export default function LoginForm() {
       <div className="flex items-center gap-4">
         <div className="flex items-center space-x-3 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl px-4 py-2 border border-slate-200/50 dark:border-slate-700/50">
           <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
-            <User className="w-4 h-4 text-white" />
+            <UserIcon className="w-4 h-4 text-white" />
           </div>
           <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
             {user.email}

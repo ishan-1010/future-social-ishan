@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Home as HomeIcon, Plus, User, Sparkles } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Home as HomeIcon, Plus, User as UserIcon, Sparkles } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
+import type { User } from '@supabase/supabase-js'
 import LoginForm from '@/components/LoginForm'
 import CreatePost from '@/components/CreatePost'
 import Feed from '@/components/Feed'
@@ -10,9 +11,13 @@ import ProfileForm from '@/components/ProfileForm'
 
 export default function Home() {
   const supabase = createClient()
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'feed' | 'create' | 'profile'>('feed')
+
+  const handleTabChange = useCallback(() => {
+    setActiveTab('feed')
+  }, [])
 
   useEffect(() => {
     const getUser = async () => {
@@ -22,12 +27,12 @@ export default function Home() {
     }
     getUser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ?? null)
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [supabase.auth])
 
   if (loading) {
     return (
@@ -97,7 +102,7 @@ export default function Home() {
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-slate-700/50'
                 }`}
               >
-                <User className="w-4 h-4" />
+                <UserIcon className="w-4 h-4" />
                 <span>Profile</span>
               </button>
             </div>
@@ -116,7 +121,7 @@ export default function Home() {
 
               {activeTab === 'create' && (
                 <div>
-                  <CreatePost onPostCreated={() => setActiveTab('feed')} />
+                  <CreatePost onPostCreated={handleTabChange} />
                 </div>
               )}
 

@@ -107,11 +107,13 @@ export default function Post({ post, onLikeUpdate }: PostProps) {
           {post.content}
         </p>
         {post.image_url && (
-          <div className="mt-4">
-            <img
+          <div className="mt-4 rounded-lg overflow-hidden">
+            <Image
               src={post.image_url}
               alt="Post image"
-              className="w-full max-h-96 object-cover rounded-xl shadow-lg"
+              width={500}
+              height={500}
+              className="w-full h-auto object-cover"
               onError={(e) => {
                 e.currentTarget.style.display = 'none'
               }}

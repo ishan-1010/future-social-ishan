@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Send, Image, User } from 'lucide-react'
+import { Send, Image as ImageIcon, User as UserIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase'
+import type { User } from '@supabase/supabase-js'
 
 interface CreatePostProps {
   onPostCreated: () => void
@@ -11,7 +12,7 @@ interface CreatePostProps {
 
 export default function CreatePost({ onPostCreated }: CreatePostProps) {
   const supabase = createClient()
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [content, setContent] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -22,7 +23,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
       setUser(user)
     }
     getUser()
-  }, [])
+  }, [supabase.auth])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -72,7 +73,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
       <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-modern border border-slate-200/50 dark:border-slate-700/50 p-8">
         <div className="text-center">
           <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <User className="w-8 h-8 text-white" />
+            <UserIcon className="w-8 h-8 text-white" />
           </div>
           <p className="text-slate-600 dark:text-slate-300 text-lg">Please sign in to create posts</p>
         </div>
@@ -84,7 +85,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
     <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-modern border border-slate-200/50 dark:border-slate-700/50 p-8">
       <div className="flex items-center space-x-3 mb-6">
         <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
-          <User className="w-5 h-5 text-white" />
+          <UserIcon className="w-5 h-5 text-white" />
         </div>
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">Create a Post</h2>
@@ -118,7 +119,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
             Add an image (optional)
           </label>
           <div className="relative">
-            <Image className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <ImageIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="url"
               id="imageUrl"

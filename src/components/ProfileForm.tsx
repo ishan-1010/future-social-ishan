@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { User, Camera, Save, Edit3 } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Camera, Save, Edit3, User as UserIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase'
+import type { User } from '@supabase/supabase-js'
 
 export default function ProfileForm() {
   const supabase = createClient()
@@ -12,30 +14,23 @@ export default function ProfileForm() {
   const [avatarUrl, setAvatarUrl] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
 
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      if (user) {
-        fetchProfile()
-      }
-    }
-    getUser()
-  }, [])
-
-  const fetchProfile = async () => {
-    if (!user) return
-    
+  const fetchProfile = useCallback(async (userId: string) => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/profile')
-      if (response.ok) {
-        const { profile } = await response.json()
-        setUsername(profile.username || '')
-        setBio(profile.bio || '')
-        setAvatarUrl(profile.avatar_url || '')
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      
+      if (error) throw error
+
+      if (data) {
+        setUsername(data.username || '')
+        setBio(data.bio || '')
+        setAvatarUrl(data.avatar_url || '')
       }
     } catch (error) {
       console.error('Failed to fetch profile:', error)
@@ -43,7 +38,18 @@ export default function ProfileForm() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    const getUserAndProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+      if (user) {
+        fetchProfile(user.id)
+      }
+    }
+    getUserAndProfile()
+  }, [fetchProfile, supabase.auth])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -87,7 +93,7 @@ export default function ProfileForm() {
       <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-modern border border-slate-200/50 dark:border-slate-700/50 p-8">
         <div className="text-center">
           <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <User className="w-8 h-8 text-white" />
+            <UserIcon className="w-8 h-8 text-white" />
           </div>
           <p className="text-slate-600 dark:text-slate-300 text-lg">Please sign in to edit your profile</p>
         </div>
@@ -100,7 +106,7 @@ export default function ProfileForm() {
       <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-modern border border-slate-200/50 dark:border-slate-700/50 p-8">
         <div className="text-center">
           <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg animate-pulse">
-            <User className="w-8 h-8 text-white" />
+            <UserIcon className="w-8 h-8 text-white" />
           </div>
           <p className="text-slate-600 dark:text-slate-300 text-lg">Loading profile...</p>
         </div>
@@ -126,16 +132,16 @@ export default function ProfileForm() {
           <div className="relative">
             <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
               {avatarUrl ? (
-                <img
+                <Image
                   src={avatarUrl}
                   alt="Avatar preview"
+                  width={80}
+                  height={80}
                   className="w-20 h-20 rounded-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none'
-                  }}
+                  onError={() => setAvatarUrl('')}
                 />
               ) : (
-                <User className="w-10 h-10 text-white" />
+                <UserIcon className="w-10 h-10 text-white" />
               )}
             </div>
             <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-2 border-white rounded-full flex items-center justify-center">
