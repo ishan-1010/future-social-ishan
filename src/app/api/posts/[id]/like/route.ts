@@ -1,47 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '../../../auth/[...nextauth]/route'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id } = params
     const supabase = await createServerSupabaseClient()
     
-    // First get the current like count
-    const { data: currentPost, error: fetchError } = await supabase
+    // Get the current user
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const { id: postId } = await params
+
+    // Get current post to check like count
+    const { data: currentPost } = await supabase
       .from('posts')
       .select('like_count')
-      .eq('id', id)
+      .eq('id', postId)
       .single()
 
-    if (fetchError) {
-      return NextResponse.json({ error: fetchError.message }, { status: 500 })
+    if (!currentPost) {
+      return NextResponse.json(
+        { error: 'Post not found' },
+        { status: 404 }
+      )
     }
 
-    // Then increment it
-    const { data: post, error } = await supabase
+    // Increment like count with null safety
+    const currentLikeCount = currentPost.like_count || 0
+    const { data: updatedPost } = await supabase
       .from('posts')
-      .update({ like_count: (currentPost.like_count || 0) + 1 })
-      .eq('id', id)
-      .select()
+      .update({ like_count: currentLikeCount + 1 })
+      .eq('id', postId)
+      .select(`
+        *,
+        profiles!author_id (
+          id,
+          username,
+          avatar_url
+        )
+      `)
       .single()
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    return NextResponse.json({ post })
-  } catch (error) {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ post: updatedPost })
+  } catch {
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 } 

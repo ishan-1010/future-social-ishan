@@ -9,7 +9,7 @@ interface PostProps {
     id: string
     content: string
     image_url: string | null
-    like_count: number
+    like_count: number | null
     created_at: string
     profiles: {
       id: string
@@ -21,7 +21,7 @@ interface PostProps {
 }
 
 export default function Post({ post, onLikeUpdate }: PostProps) {
-  const [likeCount, setLikeCount] = useState(post.like_count)
+  const [likeCount, setLikeCount] = useState(post.like_count || 0)
   const [isLiking, setIsLiking] = useState(false)
 
   const handleLike = async () => {
@@ -40,7 +40,7 @@ export default function Post({ post, onLikeUpdate }: PostProps) {
       }
 
       const { post: updatedPost } = await response.json()
-      setLikeCount(updatedPost.like_count)
+      setLikeCount(updatedPost.like_count || 0)
       onLikeUpdate()
       toast.success('Post liked!')
     } catch (error) {

@@ -14,7 +14,6 @@ interface Profile {
 
 export default function ProfileForm() {
   const { data: session } = useSession()
-  const [profile, setProfile] = useState<Profile | null>(null)
   const [username, setUsername] = useState('')
   const [bio, setBio] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
@@ -33,7 +32,6 @@ export default function ProfileForm() {
       const response = await fetch('/api/profile')
       if (response.ok) {
         const { profile } = await response.json()
-        setProfile(profile)
         setUsername(profile.username || '')
         setBio(profile.bio || '')
         setAvatarUrl(profile.avatar_url || '')
@@ -75,7 +73,6 @@ export default function ProfileForm() {
       }
 
       const { profile: updatedProfile } = await response.json()
-      setProfile(updatedProfile)
       toast.success('Profile updated successfully!')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update profile')

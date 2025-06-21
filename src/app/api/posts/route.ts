@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '../auth/[...nextauth]/route'
 
 export async function GET() {
   try {
     const supabase = await createServerSupabaseClient()
     
-    const { data: posts, error } = await supabase
+    const { data: posts } = await supabase
       .from('posts')
       .select(`
         *,
-        profiles:author_id (
+        profiles!author_id (
           id,
           username,
           avatar_url
@@ -19,49 +17,63 @@ export async function GET() {
       `)
       .order('created_at', { ascending: false })
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    return NextResponse.json({ posts })
-  } catch (error) {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ posts: posts || [] })
+  } catch {
+    return NextResponse.json(
+      { error: 'Failed to fetch posts' },
+      { status: 500 }
+    )
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const supabase = await createServerSupabaseClient()
     
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Get the current user
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
     }
 
     const { content, imageUrl } = await request.json()
-    
-    if (!content || content.trim().length === 0) {
-      return NextResponse.json({ error: 'Content is required' }, { status: 400 })
+
+    if (!content || typeof content !== 'string') {
+      return NextResponse.json(
+        { error: 'Content is required' },
+        { status: 400 }
+      )
     }
 
-    const supabase = await createServerSupabaseClient()
-    
-    const { data: post, error } = await supabase
+    // Create the post
+    const { data: post } = await supabase
       .from('posts')
-      .insert({
-        author_id: session.user.id,
-        content: content.trim(),
-        image_url: imageUrl || null,
-        like_count: 0
-      })
-      .select()
+      .insert([
+        {
+          content: content.trim(),
+          image_url: imageUrl || null,
+          author_id: user.id,
+        }
+      ])
+      .select(`
+        *,
+        profiles!author_id (
+          id,
+          username,
+          avatar_url
+        )
+      `)
       .single()
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
     return NextResponse.json({ post })
-  } catch (error) {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  } catch {
+    return NextResponse.json(
+      { error: 'Failed to create post' },
+      { status: 500 }
+    )
   }
 } 

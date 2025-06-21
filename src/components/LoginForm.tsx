@@ -30,7 +30,7 @@ export default function LoginForm() {
       } else {
         toast.success('Check your email for the confirmation link!')
       }
-    } catch (error) {
+    } catch {
       toast.error('An error occurred during sign up')
     } finally {
       setIsLoading(false)
@@ -54,7 +54,7 @@ export default function LoginForm() {
         toast.success('Signed in successfully!')
         router.refresh()
       }
-    } catch (error) {
+    } catch {
       toast.error('An error occurred during sign in')
     } finally {
       setIsLoading(false)

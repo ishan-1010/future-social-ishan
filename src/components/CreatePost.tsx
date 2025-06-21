@@ -86,7 +86,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label htmlFor="content" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-            What's on your mind?
+            What&apos;s on your mind?
           </label>
           <textarea
             id="content"

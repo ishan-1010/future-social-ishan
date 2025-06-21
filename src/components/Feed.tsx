@@ -45,10 +45,6 @@ export default function Feed() {
     fetchPosts()
   }, [])
 
-  const handlePostCreated = () => {
-    fetchPosts()
-  }
-
   const handleLikeUpdate = () => {
     fetchPosts()
   }

@@ -1,73 +1,82 @@
-import NextAuth, { AuthOptions } from "next-auth"
-import CredentialsProvider from "next-auth/providers/credentials"
-import { createClient } from "@supabase/supabase-js"
-import { JWT } from "next-auth/jwt"
+import NextAuth from 'next-auth'
+import CredentialsProvider from 'next-auth/providers/credentials'
+import { createClient } from '@supabase/supabase-js'
 
-export const authOptions: AuthOptions = {
-  session: {
-    strategy: "jwt",
-  },
+const handler = NextAuth({
   providers: [
     CredentialsProvider({
-      name: 'Credentials',
+      name: 'credentials',
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Missing credentials");
+          return null
         }
 
         const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
-
-        const { data, error } = await supabase.auth.signInWithPassword({
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+        
+        const { data: { user }, error } = await supabase.auth.signInWithPassword({
           email: credentials.email,
           password: credentials.password,
         })
 
-        if (error) {
-          console.error("Supabase sign-in error:", error.message)
-          // Returning null or throwing an error will trigger the failure callback
+        if (error || !user) {
           return null
         }
-        
-        if (data.user) {
-          // On successful auth, return the user object
-          return {
-            id: data.user.id,
-            email: data.user.email,
-            // You can add more properties here if needed
-          }
+
+        // Get or create profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+
+        if (!profile) {
+          // Create profile if it doesn't exist
+          await supabase
+            .from('profiles')
+            .insert([
+              {
+                id: user.id,
+                email: user.email,
+                username: user.email?.split('@')[0] || 'User',
+              }
+            ])
         }
-        
-        return null
+
+        return {
+          id: user.id,
+          email: user.email || '',
+          name: profile?.username || user.email?.split('@')[0] || 'User',
+        }
       }
     })
   ],
+  session: {
+    strategy: 'jwt'
+  },
   callbacks: {
     async jwt({ token, user }) {
-      // After sign-in, the user object is passed to the jwt callback.
-      // Persist the user id to the token.
       if (user) {
-        token.id = user.id;
+        token.id = user.id
       }
-      return token;
+      return token
     },
     async session({ session, token }) {
-      // The session callback gets the token.
-      // Persist the user id to the session.
-      if (session.user) {
-        session.user.id = token.id as string;
+      if (token && session.user) {
+        session.user.id = token.id as string
       }
-      return session;
-    },
+      return session
+    }
   },
-}
-
-const handler = NextAuth(authOptions)
+  pages: {
+    signIn: '/'
+  }
+})
 
 export { handler as GET, handler as POST } 
