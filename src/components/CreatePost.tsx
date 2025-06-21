@@ -1,24 +1,33 @@
 'use client'
 
-import { useState } from 'react'
-import { useSession } from 'next-auth/react'
+import { useState, useEffect } from 'react'
 import { Send, Image, User } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { createClient } from '@/lib/supabase'
 
 interface CreatePostProps {
   onPostCreated: () => void
 }
 
 export default function CreatePost({ onPostCreated }: CreatePostProps) {
-  const { data: session } = useSession()
+  const supabase = createClient()
+  const [user, setUser] = useState<any>(null)
   const [content, setContent] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+    }
+    getUser()
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!session?.user) {
+    if (!user) {
       toast.error('Please sign in to create a post')
       return
     }
@@ -58,7 +67,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
     }
   }
 
-  if (!session?.user) {
+  if (!user) {
     return (
       <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-modern border border-slate-200/50 dark:border-slate-700/50 p-8">
         <div className="text-center">

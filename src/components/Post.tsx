@@ -3,50 +3,41 @@
 import { useState } from 'react'
 import { Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { PostWithDetails } from '@/types/database'
+import Image from 'next/image'
+import { formatDistanceToNow } from 'date-fns'
 
 interface PostProps {
-  post: {
-    id: string
-    content: string
-    image_url: string | null
-    like_count: number | null
-    created_at: string
-    profiles: {
-      id: string
-      username: string | null
-      avatar_url: string | null
-    }
-  }
+  post: PostWithDetails
   onLikeUpdate: () => void
 }
 
 export default function Post({ post, onLikeUpdate }: PostProps) {
-  const [likeCount, setLikeCount] = useState(post.like_count || 0)
-  const [isLiking, setIsLiking] = useState(false)
+  const [likeCount, setLikeCount] = useState(post.like_count)
+  const [isLiked, setIsLiked] = useState(post.user_has_liked)
 
   const handleLike = async () => {
-    if (isLiking) return
-    
-    setIsLiking(true)
-    
-    try {
-      const response = await fetch(`/api/posts/${post.id}/like`, {
-        method: 'POST',
-      })
+    // Optimistic UI update
+    setIsLiked(!isLiked)
+    setLikeCount(isLiked ? likeCount - 1 : likeCount + 1)
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to like post')
-      }
+    const res = await fetch(`/api/posts/${post.id}/like`, {
+      method: 'POST',
+    })
 
-      const { post: updatedPost } = await response.json()
-      setLikeCount(updatedPost.like_count || 0)
+    if (res.ok) {
+      const data = await res.json()
+      // Re-sync with server response
+      setLikeCount(data.like_count)
+      setIsLiked(data.user_has_liked)
       onLikeUpdate()
-      toast.success('Post liked!')
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to like post')
-    } finally {
-      setIsLiking(false)
+      // Show appropriate toast message
+      toast.success(isLiked ? 'Post unliked!' : 'Post liked!')
+    } else {
+      // Revert on error
+      setIsLiked(!isLiked)
+      setLikeCount(isLiked ? likeCount - 1 : likeCount + 1)
+      toast.error('Failed to like post')
     }
   }
 
@@ -76,15 +67,17 @@ export default function Post({ post, onLikeUpdate }: PostProps) {
         <div className="flex items-start space-x-3">
           <div className="relative">
             <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
-              {post.profiles.avatar_url ? (
-                <img
-                  src={post.profiles.avatar_url}
-                  alt={post.profiles.username || 'User'}
+              {post.avatar_url ? (
+                <Image
+                  src={post.avatar_url}
+                  alt={`${post.username}'s avatar`}
+                  width={48}
+                  height={48}
                   className="w-12 h-12 rounded-full object-cover"
                 />
               ) : (
                 <span className="text-white font-semibold text-lg">
-                  {post.profiles.username?.[0]?.toUpperCase() || 'U'}
+                  {post.username?.[0]?.toUpperCase() || 'U'}
                 </span>
               )}
             </div>
@@ -93,10 +86,12 @@ export default function Post({ post, onLikeUpdate }: PostProps) {
           <div className="flex-1">
             <div className="flex items-center space-x-2">
               <h3 className="font-semibold text-slate-900 dark:text-white">
-                {post.profiles.username || 'Anonymous User'}
+                {post.username || 'Anonymous User'}
               </h3>
               <span className="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full">
-                {formatDate(post.created_at)}
+                {formatDistanceToNow(new Date(post.created_at), {
+                  addSuffix: true,
+                })}
               </span>
             </div>
           </div>
@@ -130,10 +125,11 @@ export default function Post({ post, onLikeUpdate }: PostProps) {
         <div className="flex items-center space-x-6">
           <button
             onClick={handleLike}
-            disabled={isLiking}
-            className="flex items-center space-x-2 px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all duration-200 disabled:opacity-50 group"
+            className={`flex items-center space-x-2 px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all duration-200 ${
+              isLiked ? 'text-red-500' : ''
+            }`}
           >
-            <Heart className={`w-5 h-5 transition-all duration-200 group-hover:scale-110 ${likeCount > 0 ? 'text-red-500 fill-red-500' : ''}`} />
+            <Heart className={`w-5 h-5 transition-all duration-200 group-hover:scale-110 ${isLiked ? 'fill-red-500' : ''}`} />
             <span className="font-medium">{likeCount}</span>
           </button>
           

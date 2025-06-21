@@ -2,78 +2,66 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 
 export async function GET() {
-  try {
-    const supabase = await createServerSupabaseClient()
-    
-    const { data: posts } = await supabase
-      .from('posts')
-      .select(`
-        *,
-        profiles!author_id (
-          id,
-          username,
-          avatar_url
-        )
-      `)
-      .order('created_at', { ascending: false })
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-    return NextResponse.json({ posts: posts || [] })
-  } catch {
-    return NextResponse.json(
-      { error: 'Failed to fetch posts' },
-      { status: 500 }
-    )
+  if (!user) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+    });
   }
+
+  // Use the new view 'posts_with_details' to get posts
+  // This view includes like_count and user_has_liked
+  const { data, error } = await supabase
+    .from("posts_with_details")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching posts:", error);
+    return new Response(JSON.stringify({ error: "Failed to fetch posts" }), {
+      status: 500,
+    });
+  }
+
+  return new Response(JSON.stringify(data), {
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createServerSupabaseClient()
-    
-    // Get the current user
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+export async function POST(req: Request) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-    const { content, imageUrl } = await request.json()
-
-    if (!content || typeof content !== 'string') {
-      return NextResponse.json(
-        { error: 'Content is required' },
-        { status: 400 }
-      )
-    }
-
-    // Create the post
-    const { data: post } = await supabase
-      .from('posts')
-      .insert([
-        {
-          content: content.trim(),
-          image_url: imageUrl || null,
-          author_id: user.id,
-        }
-      ])
-      .select(`
-        *,
-        profiles!author_id (
-          id,
-          username,
-          avatar_url
-        )
-      `)
-      .single()
-
-    return NextResponse.json({ post })
-  } catch {
-    return NextResponse.json(
-      { error: 'Failed to create post' },
-      { status: 500 }
-    )
+  if (!user) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+    });
   }
+
+  const { content } = await req.json();
+
+  if (!content) {
+    return new Response(JSON.stringify({ error: "Content is required" }), {
+      status: 400,
+    });
+  }
+
+  const { data, error } = await supabase
+    .from("posts")
+    .insert([{ content, author_id: user.id }])
+    .select();
+
+  if (error) {
+    console.error("Error creating post:", error);
+    return new Response(JSON.stringify({ error: "Failed to create post" }), {
+      status: 500,
+    });
+  }
+
+  return new Response(JSON.stringify(data), {
+    status: 201,
+    headers: { "Content-Type": "application/json" },
+  });
 } 

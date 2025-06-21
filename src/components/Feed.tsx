@@ -3,22 +3,10 @@
 import { useState, useEffect } from 'react'
 import { RefreshCw, AlertCircle, MessageSquare } from 'lucide-react'
 import Post from './Post'
-
-interface Post {
-  id: string
-  content: string
-  image_url: string | null
-  like_count: number
-  created_at: string
-  profiles: {
-    id: string
-    username: string | null
-    avatar_url: string | null
-  }
-}
+import { PostWithDetails } from '@/types/database'
 
 export default function Feed() {
-  const [posts, setPosts] = useState<Post[]>([])
+  const [posts, setPosts] = useState<PostWithDetails[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -32,8 +20,8 @@ export default function Feed() {
         throw new Error('Failed to fetch posts')
       }
       
-      const { posts } = await response.json()
-      setPosts(posts)
+      const data = await response.json()
+      setPosts(data)
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to fetch posts')
     } finally {

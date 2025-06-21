@@ -1,16 +1,46 @@
 'use client'
 
-import { useState } from 'react'
-import { useSession } from 'next-auth/react'
+import { useState, useEffect } from 'react'
 import { Home as HomeIcon, Plus, User, Sparkles } from 'lucide-react'
+import { createClient } from '@/lib/supabase'
 import LoginForm from '@/components/LoginForm'
 import CreatePost from '@/components/CreatePost'
 import Feed from '@/components/Feed'
 import ProfileForm from '@/components/ProfileForm'
 
 export default function Home() {
-  const { data: session } = useSession()
+  const supabase = createClient()
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'feed' | 'create' | 'profile'>('feed')
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+      setLoading(false)
+    }
+    getUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg animate-pulse">
+            <Sparkles className="w-8 h-8 text-white" />
+          </div>
+          <p className="text-slate-600 dark:text-slate-300">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
@@ -33,7 +63,7 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {session?.user ? (
+        {user ? (
           <>
             {/* Navigation Tabs */}
             <div className="flex space-x-1 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-2xl shadow-modern p-2 mb-8 border border-slate-200/50 dark:border-slate-700/50">
@@ -146,7 +176,7 @@ export default function Home() {
               Future University SDE Assignment - Social Media Platform
             </p>
             <p className="text-slate-500 dark:text-slate-500 text-xs mt-2">
-              Built with Next.js, Supabase, and NextAuth.js by Ishan Katoch
+              Built with Next.js and Supabase by Ishan Katoch
             </p>
           </div>
         </div>

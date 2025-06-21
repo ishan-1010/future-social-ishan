@@ -1,25 +1,33 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
 import { User, Camera, Save, Edit3 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { createClient } from '@/lib/supabase'
 
 export default function ProfileForm() {
-  const { data: session } = useSession()
+  const supabase = createClient()
   const [username, setUsername] = useState('')
   const [bio, setBio] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    if (session?.user) {
-      fetchProfile()
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+      if (user) {
+        fetchProfile()
+      }
     }
-  }, [session])
+    getUser()
+  }, [])
 
   const fetchProfile = async () => {
+    if (!user) return
+    
     setIsLoading(true)
     try {
       const response = await fetch('/api/profile')
@@ -40,7 +48,7 @@ export default function ProfileForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!session?.user) {
+    if (!user) {
       toast.error('Please sign in to update your profile')
       return
     }
@@ -74,7 +82,7 @@ export default function ProfileForm() {
     }
   }
 
-  if (!session?.user) {
+  if (!user) {
     return (
       <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-modern border border-slate-200/50 dark:border-slate-700/50 p-8">
         <div className="text-center">

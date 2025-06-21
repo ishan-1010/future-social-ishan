@@ -1,25 +1,38 @@
 'use client'
 
-import { useState } from 'react'
-import { signIn, signOut, useSession } from 'next-auth/react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import { LogIn, LogOut, User, Mail, Lock } from 'lucide-react'
 
 export default function LoginForm() {
-  const { data: session } = useSession()
+  const supabase = createClient()
+  const [user, setUser] = useState<any>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+    }
+    getUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     
     try {
-      const supabase = createClient()
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -42,15 +55,14 @@ export default function LoginForm() {
     setIsLoading(true)
     
     try {
-      const result = await signIn('credentials', {
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
-        redirect: false,
       })
       
-      if (result && !result.ok) {
-        toast.error('Invalid email or password.')
-      } else if (result?.ok) {
+      if (error) {
+        toast.error(error.message)
+      } else {
         toast.success('Signed in successfully!')
         router.refresh()
       }
@@ -61,7 +73,21 @@ export default function LoginForm() {
     }
   }
 
-  if (session) {
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        toast.error(error.message)
+      } else {
+        toast.success('Signed out successfully!')
+        router.refresh()
+      }
+    } catch {
+      toast.error('An error occurred during sign out')
+    }
+  }
+
+  if (user) {
     return (
       <div className="flex items-center gap-4">
         <div className="flex items-center space-x-3 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl px-4 py-2 border border-slate-200/50 dark:border-slate-700/50">
@@ -69,11 +95,11 @@ export default function LoginForm() {
             <User className="w-4 h-4 text-white" />
           </div>
           <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
-            {session.user?.email}
+            {user.email}
           </span>
         </div>
         <button
-          onClick={() => signOut()}
+          onClick={handleSignOut}
           className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-500 to-red-600 rounded-xl hover:from-red-600 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 shadow-lg shadow-red-500/25"
         >
           <LogOut className="w-4 h-4" />
