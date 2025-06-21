@@ -41,25 +41,6 @@ export default function Post({ post, onLikeUpdate }: PostProps) {
     }
   }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
-    
-    if (diffInHours < 1) {
-      return 'Just now'
-    } else if (diffInHours < 24) {
-      return `${diffInHours}h ago`
-    } else if (diffInHours < 48) {
-      return 'Yesterday'
-    } else {
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      })
-    }
-  }
-
   return (
     <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-modern border border-slate-200/50 dark:border-slate-700/50 p-6 mb-6 hover:shadow-modern-lg transition-all duration-300">
       {/* Header */}
