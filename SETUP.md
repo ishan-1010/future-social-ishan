@@ -54,16 +54,13 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
 
-# NextAuth Configuration
-NEXTAUTH_SECRET=your_nextauth_secret_here
-NEXTAUTH_URL=http://localhost:3000
 ```
+If you decide to integrate NextAuth later, also set `NEXTAUTH_SECRET` and `NEXTAUTH_URL` in this file.
 
 **Important Notes:**
 - Replace `your_supabase_url_here` with your actual Supabase URL
 - Replace `your_supabase_anon_key_here` with your actual anon key
 - Replace `your_supabase_service_role_key_here` with your actual service role key
-- For `NEXTAUTH_SECRET`, generate a random string using: `openssl rand -base64 32`
 
 ## Step 4: Configure Supabase Auth
 
@@ -74,8 +71,9 @@ NEXTAUTH_URL=http://localhost:3000
 
 2. **Set Up Auth Redirects**
    - Go to Authentication > URL Configuration
-   - Add `http://localhost:3000/api/auth/callback/nextauth` to Site URL
+   - Add `http://localhost:3000` to Site URL
    - Add `http://localhost:3000` to Redirect URLs
+    - If you add NextAuth later, include `http://localhost:3000/api/auth/callback/nextauth` in the redirect URLs.
 
 ## Step 5: Run the Application
 

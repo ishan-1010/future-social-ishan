@@ -24,7 +24,7 @@ A simplified social media platform built for the Future University SDE Assignmen
 - **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
 - **Backend**: Next.js API Routes
 - **Database**: Supabase (PostgreSQL)
-- **Authentication**: NextAuth.js with Supabase adapter
+- **Authentication**: Supabase Auth
 - **Deployment**: Vercel
 - **UI Components**: Lucide React icons, React Hot Toast
 
@@ -62,10 +62,8 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
 
-# NextAuth Configuration
-NEXTAUTH_SECRET=your_nextauth_secret_here
-NEXTAUTH_URL=http://localhost:3000
 ```
+If you later integrate NextAuth, also set `NEXTAUTH_SECRET` and `NEXTAUTH_URL` here.
 
 ### 4. Set Up Database Schema
 
@@ -155,8 +153,6 @@ Make sure to set these in your Vercel dashboard:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `NEXTAUTH_SECRET`
-- `NEXTAUTH_URL` (your production URL)
 
 ## 📁 Project Structure
 
@@ -165,7 +161,6 @@ future-social/
 ├── src/
 │   ├── app/
 │   │   ├── api/
-│   │   │   ├── auth/[...nextauth]/route.ts
 │   │   │   ├── posts/
 │   │   │   │   ├── route.ts
 │   │   │   │   └── [id]/like/route.ts
@@ -173,7 +168,6 @@ future-social/
 │   │   ├── layout.tsx
 │   │   └── page.tsx
 │   ├── components/
-│   │   ├── AuthProvider.tsx
 │   │   ├── CreatePost.tsx
 │   │   ├── Feed.tsx
 │   │   ├── LoginForm.tsx
