@@ -39,7 +39,13 @@ export async function POST(req: Request) {
     });
   }
 
-  const { content } = await req.json();
+  const { content, imageUrl } = await req.json();
+
+  // Normalize empty image strings to null
+  const sanitizedImageUrl =
+    typeof imageUrl === "string" && imageUrl.trim() !== ""
+      ? imageUrl.trim()
+      : null;
 
   if (!content) {
     return new Response(JSON.stringify({ error: "Content is required" }), {
@@ -49,7 +55,7 @@ export async function POST(req: Request) {
 
   const { data, error } = await supabase
     .from("posts")
-    .insert([{ content, author_id: user.id }])
+    .insert([{ content, image_url: sanitizedImageUrl, author_id: user.id }])
     .select();
 
   if (error) {
