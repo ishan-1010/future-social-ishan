@@ -70,7 +70,7 @@ export default function ProfileForm() {
         body: JSON.stringify({
           username: username.trim() || null,
           bio: bio.trim() || null,
-          avatarUrl: avatarUrl.trim() || null,
+          avatar_url: avatarUrl.trim() || null,
         }),
       })
 
